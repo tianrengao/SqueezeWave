@@ -56,8 +56,6 @@ class WaveGlowLoss(torch.nn.Module):
                 log_det_W_total += log_det_W_list[i]
 
         loss = torch.sum(z*z)/(2*self.sigma*self.sigma) - log_s_total - log_det_W_total
-        if loss != loss or loss == float('inf'):
-            print("z :", torch.sum(z) ," z square " ,torch.sum(z*z)/(2*self.sigma*self.sigma), " log s : ", log_s_total, " log_det_W_total : ", log_det_W_total)
         return loss/(z.size(0)*z.size(1)*z.size(2))
 
 class Invertible1x1Conv(torch.nn.Module):
@@ -116,10 +114,9 @@ class WN(torch.nn.Module):
         self.n_channels = n_channels
         self.in_layers = torch.nn.ModuleList()
         self.res_skip_layers = torch.nn.ModuleList()
-#        self.n_group = 8
         in_layer_channels = 256 # in_layer's input & output channel size
         res_skip_channels = 256 # res_skip_layer's output channel size
-        #self.upsample = Upsample1d(2)        
+        self.upsample = Upsample1d(2)        
         start = torch.nn.Conv1d(n_in_channels, in_layer_channels, 1)
         start = torch.nn.utils.weight_norm(start, name='weight')
         self.start = start
@@ -134,17 +131,7 @@ class WN(torch.nn.Module):
         cond_layer = torch.nn.Conv1d(n_mel_channels, 2*n_channels*n_layers, 1)
         self.cond_layer = torch.nn.utils.weight_norm(cond_layer, name='weight')
         for i in range(n_layers):
-            # update in_layer's input channel and res_skip_layer's output
-            #if i > 0 and i % 2 == 0:
-                # in_layer's input chennel size after concat
-            #    in_layer_channels = in_layer_channels + res_skip_channels 
-                # res_skip_layer's addition output channel size
-            #    res_skip_channels = in_layer_channels 
-            #else:
-            #res_skip_channels = 64 # res_skip_layer's concat output channel size
             dilation = 1
-            #if i == 7:
-                #dilation = 2
             padding = int((kernel_size*dilation - dilation)/2)
             # depthwise separable convolution
             in_layer = torch.nn.Conv1d(in_layer_channels, in_layer_channels, 3, dilation=dilation, padding=padding, groups = in_layer_channels).cuda()
@@ -152,7 +139,7 @@ class WN(torch.nn.Module):
             bn = torch.nn.BatchNorm1d(n_channels) 
             self.in_layers.append(torch.nn.Sequential(bn, in_layer, depthwise))
             # res_skip_layer
-            res_skip_layer = torch.nn.Conv1d(n_channels, res_skip_channels, 1)
+            res_skip_layer = torch.nn.Conv1d(n_channels, n_channels, 1)
             res_skip_layer = torch.nn.utils.weight_norm(res_skip_layer, name='weight')
             self.res_skip_layers.append(res_skip_layer)
                         
@@ -167,11 +154,7 @@ class WN(torch.nn.Module):
         for i in range(self.n_layers):
             # split the corresponding mel_spectrogram
             spect_offset = i*2*self.n_channels
-            #print("size of spec: ", spect.size(2))
             spec = spect[:,spect_offset:spect_offset+2*self.n_channels,:]
-            # upsample (L: 63 -> 2000)
-#            cond = torch.nn.functional.interpolate(spec, scale_factor=2, mode='nearest')[:, :, :audio.size(2)].half()
-            #print("mel spec size is ",spec.size(2))
             cond = spec #self.upsample(spec)[:, :, :audio.size(2)]
             acts = fused_add_tanh_sigmoid_multiply(
                 self.in_layers[i](audio),
@@ -179,10 +162,6 @@ class WN(torch.nn.Module):
                 n_channels_tensor)
             # res_skip
             res_skip_acts = self.res_skip_layers[i](acts)
-            # channel concat 
-            #if i % 2 == 1:
-            #    audio = torch.cat((audio, res_skip_acts), dim = 1)
-            #else:
             audio = audio + res_skip_acts
         return self.end(audio)
 
@@ -239,7 +218,6 @@ class WaveGlow(torch.nn.Module):
             output = self.WN[k]((audio_0, spect))
             log_s = output[:, n_half:, :]
             b = output[:, :n_half, :]
-            #audio_1 = (torch.exp(log_s) + 1e-8)*audio_1 + b
 
             audio_1 = (torch.exp(log_s))*audio_1 + b
             log_s_list.append(log_s)
@@ -252,7 +230,6 @@ class WaveGlow(torch.nn.Module):
         # this part is written by @bohanzhai
         time_cutoff = 1024 - 256
         spect_size = spect.size()
-        #l = (spect.size(2)*256 + (1024 - 1) + 1 - time_cutoff + 1) // 128 
         l = spect.size(2)
         if spect.type() == 'torch.cuda.HalfTensor':
             audio = torch.cuda.HalfTensor(spect.size(0),
