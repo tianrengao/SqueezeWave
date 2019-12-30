@@ -1,0 +1,314 @@
+# *****************************************************************************
+#  Copyright (c) 2018, NVIDIA CORPORATION.  All rights reserved.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions are met:
+#      * Redistributions of source code must retain the above copyright
+#        notice, this list of conditions and the following disclaimer.
+#      * Redistributions in binary form must reproduce the above copyright
+#        notice, this list of conditions and the following disclaimer in the
+#        documentation and/or other materials provided with the distribution.
+#      * Neither the name of the NVIDIA CORPORATION nor the
+#        names of its contributors may be used to endorse or promote products
+#        derived from this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+#  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+#  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+#  DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
+#  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+#  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+#  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+#  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+#  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# *****************************************************************************
+import copy
+import torch
+from torch.autograd import Variable
+import torch.nn.functional as F
+from upsample1d import Upsample1d
+
+@torch.jit.script
+def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
+    n_channels_int = n_channels[0]
+    in_act = input_a+input_b
+    t_act = torch.tanh(in_act[:, :n_channels_int, :])
+    s_act = torch.sigmoid(in_act[:, n_channels_int:, :])
+    acts = t_act * s_act
+    return acts
+
+
+class WaveGlowLoss(torch.nn.Module):
+    def __init__(self, sigma=1.0):
+        super(WaveGlowLoss, self).__init__()
+        self.sigma = sigma
+
+    def forward(self, model_output):
+        z, log_s_list, log_det_W_list = model_output
+        for i, log_s in enumerate(log_s_list):
+            if i == 0:
+                log_s_total = torch.sum(log_s)
+                log_det_W_total = log_det_W_list[i]
+            else:
+                log_s_total = log_s_total + torch.sum(log_s)
+                log_det_W_total += log_det_W_list[i]
+
+        loss = torch.sum(z*z)/(2*self.sigma*self.sigma) - log_s_total - log_det_W_total
+        if loss != loss or loss == float('inf'):
+            print("z :", torch.sum(z) ," z square " ,torch.sum(z*z)/(2*self.sigma*self.sigma), " log s : ", log_s_total, " log_det_W_total : ", log_det_W_total)
+        return loss/(z.size(0)*z.size(1)*z.size(2))
+
+class Invertible1x1Conv(torch.nn.Module):
+    """
+    The layer outputs both the convolution, and the log determinant
+    of its weight matrix.  If reverse=True it does convolution with
+    inverse
+    """
+    def __init__(self, c):
+        super(Invertible1x1Conv, self).__init__()
+        self.conv = torch.nn.Conv1d(c, c, kernel_size=1, stride=1, padding=0,
+                                    bias=False)
+
+        # Sample a random orthonormal matrix to initialize weights
+        W = torch.qr(torch.FloatTensor(c, c).normal_())[0]
+
+        # Ensure determinant is 1.0 not -1.0
+        if torch.det(W) < 0:
+            W[:,0] = -1*W[:,0]
+        W = W.view(c, c, 1)
+        self.conv.weight.data = W
+
+    def forward(self, z, reverse=False):
+        # shape
+        batch_size, group_size, n_of_groups = z.size()
+        W = self.conv.weight.squeeze()
+
+        if reverse:
+            if not hasattr(self, 'W_inverse'):
+                # Reverse computation
+                W_inverse = W.float().inverse()
+                W_inverse = Variable(W_inverse[..., None])
+                if z.type() == 'torch.cuda.HalfTensor':
+                    W_inverse = W_inverse.half()
+                self.W_inverse = W_inverse
+            z = F.conv1d(z, self.W_inverse, bias=None, stride=1, padding=0)
+            return z
+        else:
+            # Forward computation
+            log_det_W = batch_size * n_of_groups * torch.logdet(W)
+            z = self.conv(z)
+            return z, log_det_W
+
+class WN(torch.nn.Module):
+    """
+    This is the WaveNet like layer for the affine coupling.  The primary difference
+    from WaveNet is the convolutions need not be causal.  There is also no dilation
+    size reset.  The dilation only doubles on each layer
+    """
+    def __init__(self, n_in_channels, n_mel_channels, n_layers, n_channels,
+                 kernel_size):
+        super(WN, self).__init__()
+        assert(kernel_size % 2 == 1)
+        assert(n_channels % 2 == 0)
+        self.n_layers = n_layers
+        self.n_channels = n_channels
+        self.in_layers = torch.nn.ModuleList()
+        self.res_skip_layers = torch.nn.ModuleList()
+#        self.n_group = 8
+        in_layer_channels = 256 # in_layer's input & output channel size
+        res_skip_channels = 256 # res_skip_layer's output channel size
+        #self.upsample = Upsample1d(2)        
+        start = torch.nn.Conv1d(n_in_channels, in_layer_channels, 1)
+        start = torch.nn.utils.weight_norm(start, name='weight')
+        self.start = start
+        end = torch.nn.Conv1d(in_layer_channels, 2*n_in_channels, 1)
+        end.weight.data.zero_()
+        end.bias.data.zero_()
+        self.end = end
+        
+        # This part is written by @tianrengao
+         
+        # cond_layer
+        cond_layer = torch.nn.Conv1d(n_mel_channels, 2*n_channels*n_layers, 1)
+        self.cond_layer = torch.nn.utils.weight_norm(cond_layer, name='weight')
+        for i in range(n_layers):
+            # update in_layer's input channel and res_skip_layer's output
+            #if i > 0 and i % 2 == 0:
+                # in_layer's input chennel size after concat
+            #    in_layer_channels = in_layer_channels + res_skip_channels 
+                # res_skip_layer's addition output channel size
+            #    res_skip_channels = in_layer_channels 
+            #else:
+            #res_skip_channels = 64 # res_skip_layer's concat output channel size
+            dilation = 1
+            #if i == 7:
+                #dilation = 2
+            padding = int((kernel_size*dilation - dilation)/2)
+            # depthwise separable convolution
+            in_layer = torch.nn.Conv1d(in_layer_channels, in_layer_channels, 3, dilation=dilation, padding=padding, groups = in_layer_channels).cuda()
+            depthwise = torch.nn.Conv1d(in_layer_channels, 2*n_channels, 1).cuda()
+            bn = torch.nn.BatchNorm1d(n_channels) 
+            self.in_layers.append(torch.nn.Sequential(bn, in_layer, depthwise))
+            # res_skip_layer
+            res_skip_layer = torch.nn.Conv1d(n_channels, res_skip_channels, 1)
+            res_skip_layer = torch.nn.utils.weight_norm(res_skip_layer, name='weight')
+            self.res_skip_layers.append(res_skip_layer)
+                        
+    def forward(self, forward_input):
+        #import pdb
+        #pdb.set_trace()
+        audio, spect = forward_input
+        audio = self.start(audio)
+        n_channels_tensor = torch.IntTensor([self.n_channels])
+        # pass all the mel_spectrograms to cond_layer
+        spect = self.cond_layer(spect)
+        for i in range(self.n_layers):
+            # split the corresponding mel_spectrogram
+            spect_offset = i*2*self.n_channels
+            #print("size of spec: ", spect.size(2))
+            spec = spect[:,spect_offset:spect_offset+2*self.n_channels,:]
+            # upsample (L: 63 -> 2000)
+#            cond = torch.nn.functional.interpolate(spec, scale_factor=2, mode='nearest')[:, :, :audio.size(2)].half()
+            #print("mel spec size is ",spec.size(2))
+            cond = spec #self.upsample(spec)[:, :, :audio.size(2)]
+            acts = fused_add_tanh_sigmoid_multiply(
+                self.in_layers[i](audio),
+                cond, 
+                n_channels_tensor)
+            # res_skip
+            res_skip_acts = self.res_skip_layers[i](acts)
+            # channel concat 
+            #if i % 2 == 1:
+            #    audio = torch.cat((audio, res_skip_acts), dim = 1)
+            #else:
+            audio = audio + res_skip_acts
+        return self.end(audio)
+
+
+class WaveGlow(torch.nn.Module):
+    def __init__(self, n_mel_channels, n_flows, n_group, n_early_every,
+                 n_early_size, WN_config):
+        super(WaveGlow, self).__init__()        
+        assert(n_group % 2 == 0)
+        self.n_flows = n_flows
+        self.n_group = n_group
+        self.n_early_every = n_early_every
+        self.n_early_size = n_early_size
+        self.WN = torch.nn.ModuleList()
+        self.convinv = torch.nn.ModuleList()
+
+        n_half = int(n_group/2)
+        # Set up layers with the right sizes based on how many dimensions
+        # have been output already
+        n_remaining_channels = n_group
+        for k in range(n_flows):
+            if k % self.n_early_every == 0 and k > 0:
+                n_half = n_half - int(self.n_early_size/2)
+                n_remaining_channels = n_remaining_channels - self.n_early_size
+            self.convinv.append(Invertible1x1Conv(n_remaining_channels))
+            self.WN.append(WN(n_half, n_mel_channels, **WN_config))
+
+        self.n_remaining_channels = n_remaining_channels  # Useful during inference
+
+    def forward(self, forward_input):
+        """
+        forward_input[0] = mel_spectrogram:  batch x n_mel_channels x frames
+        forward_input[1] = audio: batch x time
+        """
+        spect, audio = forward_input
+
+        audio = audio.unfold(1, self.n_group, self.n_group).permute(0, 2, 1)
+        output_audio = []
+        log_s_list = []
+        log_det_W_list = []
+
+        for k in range(self.n_flows):
+            if k % self.n_early_every == 0 and k > 0:
+                output_audio.append(audio[:,:self.n_early_size,:])
+                audio = audio[:,self.n_early_size:,:]
+
+            audio, log_det_W = self.convinv[k](audio)
+            log_det_W_list.append(log_det_W)
+
+            n_half = int(audio.size(1)/2)
+            audio_0 = audio[:,:n_half,:]
+            audio_1 = audio[:,n_half:,:]
+
+            output = self.WN[k]((audio_0, spect))
+            log_s = output[:, n_half:, :]
+            b = output[:, :n_half, :]
+            #audio_1 = (torch.exp(log_s) + 1e-8)*audio_1 + b
+
+            audio_1 = (torch.exp(log_s))*audio_1 + b
+            log_s_list.append(log_s)
+            audio = torch.cat([audio_0, audio_1], 1)
+
+        output_audio.append(audio)
+        return torch.cat(output_audio,1), log_s_list, log_det_W_list
+
+    def infer(self, spect, sigma=1.0):
+        # this part is written by @bohanzhai
+        time_cutoff = 1024 - 256
+        spect_size = spect.size()
+        #l = (spect.size(2)*256 + (1024 - 1) + 1 - time_cutoff + 1) // 128 
+        l = spect.size(2)
+        if spect.type() == 'torch.cuda.HalfTensor':
+            audio = torch.cuda.HalfTensor(spect.size(0),
+                                          self.n_remaining_channels,
+                                          l).normal_()
+        else:
+            audio = torch.cuda.FloatTensor(spect.size(0),
+                                           self.n_remaining_channels,
+                                           l).normal_()
+
+        for k in reversed(range(self.n_flows)):
+            n_half = int(audio.size(1)/2)
+            audio_0 = audio[:,:n_half,:]
+            audio_1 = audio[:,n_half:,:]
+            output = self.WN[k]((audio_0, spect))
+
+            s = output[:, n_half:, :]
+            b = output[:, :n_half, :]
+            audio_1 = (audio_1 - b)/torch.exp(s)
+            audio = torch.cat([audio_0, audio_1],1)
+
+            audio = self.convinv[k](audio, reverse=True)
+
+            if k % self.n_early_every == 0 and k > 0:
+                if spect.type() == 'torch.cuda.HalfTensor':
+                    z = torch.cuda.HalfTensor(spect.size(0), self.n_early_size, l).normal_()
+                else:
+                    z = torch.cuda.FloatTensor(spect.size(0), self.n_early_size, l).normal_()
+                audio = torch.cat((sigma*z, audio),1)
+
+        audio = audio.permute(0,2,1).contiguous().view(audio.size(0), -1).data
+        return audio
+
+
+    @staticmethod
+    def remove_weightnorm(model):
+        waveglow = model
+        for WN in waveglow.WN:
+            WN.start = torch.nn.utils.remove_weight_norm(WN.start)
+            # WN.in_layers = remove(WN.in_layers)
+            WN.cond_layer = torch.nn.utils.remove_weight_norm(WN.cond_layer)
+            WN.res_skip_layers = remove(WN.res_skip_layers) 
+        return waveglow
+
+def remove(conv_list):
+    new_conv_list = torch.nn.ModuleList()
+    for old_conv in conv_list:
+        old_conv = torch.nn.utils.remove_weight_norm(old_conv)
+        new_conv_list.append(old_conv)
+    return new_conv_list
+
+def remove_dw(in_layers):
+    new_conv_list = torch.nn.ModuleList()
+    for conv in in_layers:
+        depthwise = torch.nn.utils.remove_weight_norm(conv[0])
+        pointwise = torch.nn.utils.remove_weight_norm(conv[1])
+        new_conv_list.append(torch.nn.Sequential(depthwise, pointwise).cuda())
+    return new_conv_list
+
