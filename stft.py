@@ -42,13 +42,14 @@ from audio_processing import window_sumsquare
 class STFT(torch.nn.Module):
     """adapted from Prem Seetharaman's https://github.com/pseeth/pytorch-stft"""
     def __init__(self, filter_length=800, hop_length=200, win_length=800,
-                 window='hann'):
+                 window='hann', n_group=256):
         super(STFT, self).__init__()
         self.filter_length = filter_length
         self.hop_length = hop_length
         self.win_length = win_length
         self.window = window
         self.forward_transform = None
+        selfnn_group = n_group
         scale = self.filter_length / self.hop_length
         fourier_basis = np.fft.fft(np.eye(self.filter_length))
 
@@ -82,7 +83,7 @@ class STFT(torch.nn.Module):
 
         # similar to librosa, reflect-pad the input
         input_data = input_data.view(num_batches, 1, num_samples)
-        pad = (num_samples // self.hop_length - ((num_samples - self.filter_length) // self.hop_length + 1)) * self.hop_length
+        pad = ((num_samples // self.n_group -1)*self.hop_length + self.filter_length - num_samples) // 2 
         input_data = F.pad(
             input_data.unsqueeze(1),
             (int(pad), int(pad), 0, 0),
