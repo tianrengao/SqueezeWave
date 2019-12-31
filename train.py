@@ -130,7 +130,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
                                                       optimizer, **waveglow_config)
         iteration += 1  # next iteration is iteration + 1
 
-    trainset = Mel2Samp(**data_config)
+    trainset = Mel2Samp(**data_config, waveglow_config["n_group"])
     # =====START: ADDED FOR DISTRIBUTED======
     train_sampler = DistributedSampler(trainset) if num_gpus > 1 else None
     # =====END:   ADDED FOR DISTRIBUTED======
