@@ -1,9 +1,22 @@
 ## SqueezeWave: High-Quality Efficient Neural Audio Synthesis
-This is the implememtation of SqueezeWave. SqueezeWave achieved >25X speed up than WaveGlow without lossing performance. (modified 12/30/2019) 
+We proposed a new model called SqueezeWave which achieves more than 25X speed up than WaveGlow without lossing performance. This is the implememtation of SqueezeWave.  (modified 12/30/2019) 
 
 The paper of SqueezeWave is here: TODO
 
-More documents is here: https://docs.google.com/document/d/1VsgJ-Br-pGTGLIQXgPBWdavNR9yhHlj9OcvnUrJx79I/edit
+The demo of SqueezeWave is here: TODO
+
+
+We introduce 4 variants of SqueezeWave model in our paper. See the table below.
+
+| Model  | L , C | Internal Channel | GFLOPs | MOS |
+| ------------- | ------------- | ------------- | ------------- |------------- |
+|1  | 128 , 128  | 256 -> 512  | 18 |TODO |
+|2  | 64 , 256  | 256 -> 512  | 9 |TODO |
+|3  | 128 , 128  | 128 -> 256  | TODO |TODO |
+|4  | 64 , 256  | 128 -> 256  | TODO |TODO |
+
+More details of these four models are here: https://docs.google.com/document/d/1VsgJ-Br-pGTGLIQXgPBWdavNR9yhHlj9OcvnUrJx79I/edit
+
 
 Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuMJMtA97PP5ht44E?usp=drive_open#scrollTo=BM3EBi5twBuz
 
@@ -27,7 +40,7 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
 
 1. Download our [published model]
 2. Download [mel-spectrograms]
-3. Generate audio `python3 inference.py -f <(ls mel_spectrograms/*.pt) -w waveglow_256channels.pt -o . --is_fp16 -s 0.6`  
+3. (TODO) Generate audio `python3 inference.py -f <(ls mel_spectrograms/*.pt) -w SqueezeWave.pt -o . --is_fp16 -s 0.6`  
 
 
 ## Train your own model
@@ -41,7 +54,16 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
    ls data/*.wav | head -n10 > test_files.txt
    ```
 
-3. Train your WaveGlow networks
+3. To choose which model you want to train in the table, modify `config.json`. Set parameters `n_group` and `n_channel` to corresponding values.
+
+    | Model  | n_group | n_channel|
+    | ------------- | ------------- | ------------- |
+    |1  | 128  | 256 | 18 |
+    |2  | 256  | 256  | 9 |
+    |3  | 128  | 128 | TODO |
+    |4  | 256  | 128 | TODO |
+
+4. Train your WaveGlow networks
 
    ```command
    mkdir checkpoints
@@ -52,11 +74,11 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
 
    For mixed precision training set `"fp16_run": true` on `config.json`.
 
-4. Make test set mel-spectrograms
+5. Make test set mel-spectrograms
 
    `python mel2samp.py -f test_files.txt -o . -c config.json`
 
-5. Do inference with your network
+6. Do inference with your network
 
    ```command
    ls *.pt > mel_files.txt
