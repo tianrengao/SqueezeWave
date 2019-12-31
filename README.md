@@ -1,7 +1,9 @@
 ## SqueezeWave: High-Quality Efficient Neural Audio Synthesis
-This is the implememtation of (d). (modified 12/30/2019)
+This is the implememtation of SqueezeWave. SqueezeWave achieved >25X speed up than WaveGlow without lossing performance. (modified 12/30/2019) 
 
-More documents is here: https://docs.google.com/document/d/15JtsPrOE5Xwkjx1p-GTun1-RtQoE65ejWIyCVf1SqvA/edit
+The paper of SqueezeWave is here: TODO
+
+More documents is here: https://docs.google.com/document/d/1VsgJ-Br-pGTGLIQXgPBWdavNR9yhHlj9OcvnUrJx79I/edit
 
 Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuMJMtA97PP5ht44E?usp=drive_open#scrollTo=BM3EBi5twBuz
 
@@ -27,8 +29,6 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
 2. Download [mel-spectrograms]
 3. Generate audio `python3 inference.py -f <(ls mel_spectrograms/*.pt) -w waveglow_256channels.pt -o . --is_fp16 -s 0.6`  
 
-N.b. use `convert_model.py` to convert your older models to the current model
-with fused residual and skip connections.
 
 ## Train your own model
 
@@ -60,7 +60,7 @@ with fused residual and skip connections.
 
    ```command
    ls *.pt > mel_files.txt
-   python3 inference.py -f mel_files.txt -w checkpoints/waveglow_10000 -o . --is_fp16 -s 0.6
+   python3 inference.py -f mel_files.txt -w checkpoints/SqueezeWave_10000 -o . --is_fp16 -s 0.6
    ```
 
 [//]: # (TODO)
