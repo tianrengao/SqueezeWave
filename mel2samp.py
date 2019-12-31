@@ -61,7 +61,7 @@ class Mel2Samp(torch.utils.data.Dataset):
     This is the main class that calculates the spectrogram and returns the
     spectrogram, audio pair.
     """
-    def __init__(self, training_files, segment_length, filter_length,
+    def __init__(self, n_group, training_files, segment_length, filter_length,
                  hop_length, win_length, sampling_rate, mel_fmin, mel_fmax, n_group=256):
         self.audio_files = files_to_list(training_files)
         random.seed(1234)
