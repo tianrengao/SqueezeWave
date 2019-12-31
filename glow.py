@@ -29,7 +29,7 @@ import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
 from upsample1d import Upsample1d
-
+import numpy as np
 @torch.jit.script
 def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
     n_channels_int = n_channels[0]
@@ -114,8 +114,8 @@ class WN(torch.nn.Module):
         self.n_channels = n_channels
         self.in_layers = torch.nn.ModuleList()
         self.res_skip_layers = torch.nn.ModuleList()
-        in_layer_channels = 256 # in_layer's input & output channel size
-        res_skip_channels = 256 # res_skip_layer's output channel size
+        in_layer_channels = n_channels # in_layer's input & output channel size
+        res_skip_channels = n_channels # res_skip_layer's output channel size
         self.upsample = Upsample1d(2)        
         start = torch.nn.Conv1d(n_in_channels, in_layer_channels, 1)
         start = torch.nn.utils.weight_norm(start, name='weight')
@@ -155,7 +155,10 @@ class WN(torch.nn.Module):
             # split the corresponding mel_spectrogram
             spect_offset = i*2*self.n_channels
             spec = spect[:,spect_offset:spect_offset+2*self.n_channels,:]
-            cond = spec #self.upsample(spec)[:, :, :audio.size(2)]
+            if audio.size(2) > spec.size(2):
+                cond = self.upsample(spec)
+            else:
+                cond = spec #self.upsample(spec)[:, :, :audio.size(2)]
             acts = fused_add_tanh_sigmoid_multiply(
                 self.in_layers[i](audio),
                 cond, 
