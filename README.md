@@ -57,7 +57,7 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
 
 ## Train your own model
 
-1. Download [LJ Speech Data]. In this example it's in `data/`
+1. Download [LJ Speech Data]. We assume all the waves are stored in the directory `^/data/`
 
 2. Make a list of the file names to use for training/testing
 
