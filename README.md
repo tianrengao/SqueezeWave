@@ -66,7 +66,7 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
    ls data/*.wav | head -n10 > test_files.txt
    ```
 
-3. We provide 4 model configurations with group numbers and channel numbers specified in the table below. The configuration files are under ```^/configs``` directory. To choose the model you want to train, select the corresponding configuration file.
+3. We provide 4 model configurations with group numbers and channel numbers specified in the table below. (TODO: explain what these configurations mean.) The configuration files are under ```^/configs``` directory. To choose the model you want to train, select the corresponding configuration file.
 
     | Model  | n_group | n_channels|
     | ------------- | ------------- | ------------- |
@@ -79,7 +79,7 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
 
    ```command
    mkdir checkpoints
-   python train.py -c config.json
+   python train.py -c configs/config_g256_c128.json
    ```
 
    For multi-GPU training replace `train.py` with `distributed.py`.  Only tested with single node and NCCL.
