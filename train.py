@@ -48,25 +48,7 @@ def load_checkpoint(checkpoint_path, model, optimizer, n_flows, n_early_every, n
     model_for_loading = checkpoint_dict['model']
     state_dict = model_for_loading.state_dict()
 
-#    for j in range(12):
-#        for i in range(8):
-##            state_dict.pop("WN."+str(j)+".cond_layers."+str(i)+".bias") 
-##            state_dict.pop("WN."+str(j)+".cond_layers."+str(i)+".weight_v") 
-##            state_dict.pop("WN."+str(j)+".cond_layers."+str(i)+".weight_g") 
-#            state_dict.pop("WN."+str(j)+".in_layers."+str(i)+".bias") 
-#            state_dict.pop("WN."+str(j)+".in_layers."+str(i)+".weight_v") 
-#            state_dict.pop("WN."+str(j)+".in_layers."+str(i)+".weight_g") 
-#            state_dict.pop("WN."+str(j)+".res_skip_layers."+str(i)+".bias")
-#            state_dict.pop("WN."+str(j)+".res_skip_layers."+str(i)+".weight_g")
-#            state_dict.pop("WN."+str(j)+".res_skip_layers."+str(i)+".weight_v")
-#      
-#        state_dict.pop("WN."+str(j)+".start.bias")
-#        state_dict.pop("WN."+str(j)+".start.weight_v")
-#        state_dict.pop("WN."+str(j)+".start.weight_g")
-#        state_dict.pop("WN."+str(j)+".end.weight")
-
     model.load_state_dict(state_dict, strict = False)
-    #print(model.state_dict().keys())
     print("Loaded checkpoint '{}' (iteration {})" .format(checkpoint_path, iteration))
                                              
     return model, optimizer, iteration
@@ -98,15 +80,6 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
     pytorch_total_params_train = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print("param", pytorch_total_params)
     print("param trainable", pytorch_total_params_train)
-#    print(model)
-    # change last WN to depthwise convolution
-#    for i in range(8):   
-#        in_layer = torch.nn.Conv1d(256, 256, 3, dilation=2**7, padding=2**7, groups = 256).cuda()
-#        in_layer = torch.nn.utils.weight_norm(in_layer, name='weight')
-#        depthwise = torch.nn.Conv1d(256, 512, 1)
-#        depthwise = torch.nn.utils.weight_norm(depthwise, name='weight') 
-#        model.WN[11].in_layers[i] = torch.nn.Sequential(in_layer, depthwise).cuda()
-
 
     #=====START: ADDED FOR DISTRIBUTED======
     if num_gpus > 1:
@@ -121,10 +94,6 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
 
     # Load checkpoint if one exists
     iteration = 0 
-#    if checkpoint_path == "/rscratch/tianren/ICASSP/waveglow_ckpt_20190925/wavglow_256" :
-#        print("haha")
-#        waveglow = torch.load(checkpoint_path)['model'] 
-#        waveglow.cuda().train()
     if checkpoint_path != "":
         model, optimizer, iteration = load_checkpoint(checkpoint_path, model,
                                                       optimizer, **waveglow_config)
@@ -135,7 +104,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
     # =====START: ADDED FOR DISTRIBUTED======
     train_sampler = DistributedSampler(trainset) if num_gpus > 1 else None
     # =====END:   ADDED FOR DISTRIBUTED======
-    train_loader = DataLoader(trainset, num_workers=1, shuffle=False,
+    train_loader = DataLoader(trainset, num_workers=0, shuffle=False,
                               sampler=train_sampler,
                               batch_size=batch_size,
                               pin_memory=False,
