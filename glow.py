@@ -244,7 +244,6 @@ class WaveGlow(torch.nn.Module):
 
     def infer(self, spect, sigma=1.0):
         # this part is written by @bohanzhai
-        time_cutoff = 1024 - 256
         spect_size = spect.size()
         l = spect.size(2)
         if spect.type() == 'torch.cuda.HalfTensor':
