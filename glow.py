@@ -46,9 +46,9 @@ class Upsample1d(torch.nn.Module):
         self.scale = scale
 
     def forward(self, x):
-        forward_input = F.interpolate(
+        y = F.interpolate(
             x, scale_factor=self.scale, mode='nearest')
-    	  return forward_input
+        return y
 
 
 class WaveGlowLoss(torch.nn.Module):
@@ -183,21 +183,21 @@ class WN(torch.nn.Module):
 
 
 class WaveGlow(torch.nn.Module):
-    def __init__(self, n_mel_channels, n_flows, n_group, n_early_every,
+    def __init__(self, n_mel_channels, n_flows, n_audio_channel, n_early_every,
                  n_early_size, WN_config):
         super(WaveGlow, self).__init__()        
-        assert(n_group % 2 == 0)
+        assert(n_audio_channel % 2 == 0)
         self.n_flows = n_flows
-        self.n_group = n_group
+        self.n_audio_channel = n_audio_channel
         self.n_early_every = n_early_every
         self.n_early_size = n_early_size
         self.WN = torch.nn.ModuleList()
         self.convinv = torch.nn.ModuleList()
 
-        n_half = int(n_group/2)
+        n_half = int(n_audio_channel / 2)
         # Set up layers with the right sizes based on how many dimensions
         # have been output already
-        n_remaining_channels = n_group
+        n_remaining_channels = n_audio_channel
         for k in range(n_flows):
             if k % self.n_early_every == 0 and k > 0:
                 n_half = n_half - int(self.n_early_size/2)
@@ -214,7 +214,8 @@ class WaveGlow(torch.nn.Module):
         """
         spect, audio = forward_input
 
-        audio = audio.unfold(1, self.n_group, self.n_group).permute(0, 2, 1)
+        audio = audio.unfold(
+            1, self.n_audio_channel, self.n_audio_channel).permute(0, 2, 1)
         output_audio = []
         log_s_list = []
         log_det_W_list = []

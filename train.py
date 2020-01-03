@@ -38,7 +38,10 @@ from torch.utils.data import DataLoader
 from glow import WaveGlow, WaveGlowLoss
 from mel2samp import Mel2Samp
 
-def load_checkpoint(checkpoint_path, model, optimizer, n_flows, n_early_every, n_early_size, n_mel_channels, n_group, WN_config):
+def load_checkpoint(
+    checkpoint_path, model, optimizer, n_flows, n_early_every,
+    n_early_size, n_mel_channels, n_audio_channel, WN_config):
+
     assert os.path.isfile(checkpoint_path)
     
     checkpoint_dict = torch.load(checkpoint_path, map_location='cpu')
@@ -99,8 +102,8 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
                                                       optimizer, **waveglow_config)
         iteration += 1  # next iteration is iteration + 1
 
-    n_group =  waveglow_config["n_group"]
-    trainset = Mel2Samp(n_group, **data_config)
+    n_audio_channel =  waveglow_config["n_audio_channel"]
+    trainset = Mel2Samp(n_audio_channel, **data_config)
     # =====START: ADDED FOR DISTRIBUTED======
     train_sampler = DistributedSampler(trainset) if num_gpus > 1 else None
     # =====END:   ADDED FOR DISTRIBUTED======

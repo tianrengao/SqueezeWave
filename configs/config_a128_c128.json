@@ -29,12 +29,12 @@
     "waveglow_config": {
         "n_mel_channels": 80,
         "n_flows": 12,
-        "n_group": 256,
+        "n_audio_channel": 128,
         "n_early_every": 2,
         "n_early_size": 16,
         "WN_config": {
             "n_layers": 8,
-            "n_channels": 256,
+            "n_channels": 128,
             "kernel_size": 3
         }
     }
