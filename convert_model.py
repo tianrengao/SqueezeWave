@@ -8,7 +8,6 @@ def _check_model_old_version(model):
     else:
         return False
 
-
 def _update_model_res_skip(old_model, new_model):
     for idx in range(0, len(new_model.WN)):
         wavenet = new_model.WN[idx]
@@ -69,4 +68,3 @@ if __name__ == '__main__':
     model = torch.load(old_model_path)
     model['model'] = update_model(model['model'])
     torch.save(model, new_model_path)
-    

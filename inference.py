@@ -47,7 +47,6 @@ def main(mel_files, waveglow_path, sigma, output_dir, sampling_rate, is_fp16,
 
     for i, file_path in enumerate(mel_files):
         file_name = os.path.splitext(os.path.basename(file_path))[0]
-        import pdb
         mel = torch.load(file_path)
         mel = torch.autograd.Variable(mel.cuda())
         mel = torch.unsqueeze(mel, 0)

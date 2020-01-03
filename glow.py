@@ -24,12 +24,12 @@
 #  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 # *****************************************************************************
-import copy
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
-from upsample1d import Upsample1d
 import numpy as np
+
+
 @torch.jit.script
 def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
     n_channels_int = n_channels[0]
@@ -38,6 +38,17 @@ def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
     s_act = torch.sigmoid(in_act[:, n_channels_int:, :])
     acts = t_act * s_act
     return acts
+
+
+class Upsample1d(torch.nn.Module):
+    def __init__(self, scale=2):
+        super(Upsample1d, self).__init__()
+        self.scale = scale
+
+    def forward(self, x):
+        forward_input = F.interpolate(
+            x, scale_factor=self.scale, mode='nearest')
+    	  return forward_input
 
 
 class WaveGlowLoss(torch.nn.Module):
@@ -57,6 +68,7 @@ class WaveGlowLoss(torch.nn.Module):
 
         loss = torch.sum(z*z)/(2*self.sigma*self.sigma) - log_s_total - log_det_W_total
         return loss/(z.size(0)*z.size(1)*z.size(2))
+
 
 class Invertible1x1Conv(torch.nn.Module):
     """
@@ -99,6 +111,7 @@ class Invertible1x1Conv(torch.nn.Module):
             z = self.conv(z)
             return z, log_det_W
 
+
 class WN(torch.nn.Module):
     """
     This is the WaveNet like layer for the affine coupling.  The primary difference
@@ -134,18 +147,18 @@ class WN(torch.nn.Module):
             dilation = 1
             padding = int((kernel_size*dilation - dilation)/2)
             # depthwise separable convolution
-            in_layer = torch.nn.Conv1d(in_layer_channels, in_layer_channels, 3, dilation=dilation, padding=padding, groups = in_layer_channels).cuda()
-            depthwise = torch.nn.Conv1d(in_layer_channels, 2*n_channels, 1).cuda()
+            depthwise = torch.nn.Conv1d(in_layer_channels, in_layer_channels, 3,
+                dilation=dilation, padding=padding,
+                groups=in_layer_channels).cuda()
+            pointwise = torch.nn.Conv1d(in_layer_channels, 2*n_channels, 1).cuda()
             bn = torch.nn.BatchNorm1d(n_channels) 
-            self.in_layers.append(torch.nn.Sequential(bn, in_layer, depthwise))
+            self.in_layers.append(torch.nn.Sequential(bn, depthwise, pointwise))
             # res_skip_layer
             res_skip_layer = torch.nn.Conv1d(n_channels, n_channels, 1)
             res_skip_layer = torch.nn.utils.weight_norm(res_skip_layer, name='weight')
             self.res_skip_layers.append(res_skip_layer)
                         
     def forward(self, forward_input):
-        #import pdb
-        #pdb.set_trace()
         audio, spect = forward_input
         audio = self.start(audio)
         n_channels_tensor = torch.IntTensor([self.n_channels])
@@ -158,7 +171,7 @@ class WN(torch.nn.Module):
             if audio.size(2) > spec.size(2):
                 cond = self.upsample(spec)
             else:
-                cond = spec #self.upsample(spec)[:, :, :audio.size(2)]
+                cond = spec
             acts = fused_add_tanh_sigmoid_multiply(
                 self.in_layers[i](audio),
                 cond, 
@@ -227,7 +240,7 @@ class WaveGlow(torch.nn.Module):
             audio = torch.cat([audio_0, audio_1], 1)
 
         output_audio.append(audio)
-        return torch.cat(output_audio,1), log_s_list, log_det_W_list
+        return torch.cat(output_audio, 1), log_s_list, log_det_W_list
 
     def infer(self, spect, sigma=1.0):
         # this part is written by @bohanzhai
@@ -272,10 +285,12 @@ class WaveGlow(torch.nn.Module):
         waveglow = model
         for WN in waveglow.WN:
             WN.start = torch.nn.utils.remove_weight_norm(WN.start)
+            # TODO: do we still need to remove the batchnorms?
             # WN.in_layers = remove(WN.in_layers)
             WN.cond_layer = torch.nn.utils.remove_weight_norm(WN.cond_layer)
             WN.res_skip_layers = remove(WN.res_skip_layers) 
         return waveglow
+
 
 def remove(conv_list):
     new_conv_list = torch.nn.ModuleList()
@@ -284,6 +299,7 @@ def remove(conv_list):
         new_conv_list.append(old_conv)
     return new_conv_list
 
+
 def remove_dw(in_layers):
     new_conv_list = torch.nn.ModuleList()
     for conv in in_layers:
@@ -291,4 +307,3 @@ def remove_dw(in_layers):
         pointwise = torch.nn.utils.remove_weight_norm(conv[1])
         new_conv_list.append(torch.nn.Sequential(depthwise, pointwise).cuda())
     return new_conv_list
-
