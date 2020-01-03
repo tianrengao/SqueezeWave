@@ -21,6 +21,12 @@ More details of these four models are here: https://docs.google.com/document/d/1
 Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuMJMtA97PP5ht44E?usp=drive_open#scrollTo=BM3EBi5twBuz
 
 ## Setup
+0. (Optional) Create a virtual environment
+
+   ```
+   virtualenv env
+   source env/bin/activate
+   ```
 
 1. Clone our repo and initialize submodule
 
@@ -31,10 +37,16 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
    git submodule update
    ```
 
-2. Install requirements `pip3 install -r requirements.txt`
+2. Install requirements 
+```pip3 install -r requirements.txt``` 
 
 3. Install [Apex]
-
+   ```
+   cd ../
+   git clone https://www.github.com/nvidia/apex
+   cd apex
+   python setup.py install
+   ```
 
 ## Generate audio with our pre-existing model
 
@@ -54,9 +66,9 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
    ls data/*.wav | head -n10 > test_files.txt
    ```
 
-3. To choose which model you want to train in the table, modify `config.json`. Set parameters `n_group` and `n_channel` to corresponding values.
+3. We provide 4 model configurations with group numbers and channel numbers specified in the table below. The configuration files are under ```^/configs``` directory. To choose the model you want to train, select the corresponding configuration file.
 
-    | Model  | n_group | n_channel|
+    | Model  | n_group | n_channels|
     | ------------- | ------------- | ------------- |
     |1  | 128  | 256 | 18 |
     |2  | 256  | 256  | 9 |
