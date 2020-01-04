@@ -245,9 +245,8 @@ class WaveGlow(torch.nn.Module):
 
     def infer(self, spect, sigma=1.0):
         # this part is written by @bohanzhai
-        time_cutoff = 1024 - 256
         spect_size = spect.size()
-        l = spect.size(2)
+        l = spect.size(2)*(256 // self.n_group)
         if spect.type() == 'torch.cuda.HalfTensor':
             audio = torch.cuda.HalfTensor(spect.size(0),
                                           self.n_remaining_channels,

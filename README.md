@@ -66,9 +66,9 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
    ls data/*.wav | head -n10 > test_files.txt
    ```
 
-3. We provide 4 model configurations with group numbers and channel numbers specified in the table below. (TODO: explain what these configurations mean.) The configuration files are under ```^/configs``` directory. To choose the model you want to train, select the corresponding configuration file.
+3. We provide 4 model configurations with audio channel and channel numbers specified in the table below. The configuration files are under ```^/configs``` directory. To choose the model you want to train, select the corresponding configuration file.
 
-    | Model  | n_group | n_channels|
+    | Model  | n_audio_channel | n_channels|
     | ------------- | ------------- | ------------- |
     |1  | 128  | 256 | 18 |
     |2  | 256  | 256  | 9 |
