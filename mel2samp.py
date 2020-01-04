@@ -126,8 +126,8 @@ if __name__ == "__main__":
         data = f.read()
     config = json.loads(data)
     data_config = config["data_config"]
-    waveglow_config = config["waveglow_config"]
-    mel2samp = Mel2Samp(waveglow_config['n_audio_channel'], **data_config)
+    squeezewav_config = config["squeeze_config"]
+    mel2samp = Mel2Samp(squeeze_config['n_audio_channel'], **data_config)
 
     filepaths = files_to_list(args.filelist_path)
 

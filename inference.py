@@ -31,19 +31,18 @@ from mel2samp import files_to_list, MAX_WAV_VALUE
 from denoiser import Denoiser
 
 
-def main(mel_files, waveglow_path, sigma, output_dir, sampling_rate, is_fp16,
+def main(mel_files, squeezewav_path, sigma, output_dir, sampling_rate, is_fp16,
          denoiser_strength):
     mel_files = files_to_list(mel_files)
-    waveglow = torch.load(waveglow_path)['model']
-    print(waveglow)
-    waveglow = waveglow.remove_weightnorm(waveglow)
-    waveglow.cuda().eval()
+    squeezewav = torch.load(squeezewav_path)['model']
+    squeezewav = squeezewav.remove_weightnorm(squeezewav)
+    squeezewav.cuda().eval()
     if is_fp16:
         from apex import amp
-        waveglow, _ = amp.initialize(waveglow, [], opt_level="O3")
+        squeezewav, _ = amp.initialize(squeezewav, [], opt_level="O3")
 
     if denoiser_strength > 0:
-        denoiser = Denoiser(waveglow).cuda()
+        denoiser = Denoiser(squeezewav).cuda()
 
     for i, file_path in enumerate(mel_files):
         file_name = os.path.splitext(os.path.basename(file_path))[0]
@@ -52,7 +51,7 @@ def main(mel_files, waveglow_path, sigma, output_dir, sampling_rate, is_fp16,
         mel = torch.unsqueeze(mel, 0)
         mel = mel.half() if is_fp16 else mel
         with torch.no_grad():
-            audio = waveglow.infer(mel, sigma=sigma).float()
+            audio = squeezewav.infer(mel, sigma=sigma).float()
             if denoiser_strength > 0:
                 audio = denoiser(audio, denoiser_strength)
             audio = audio * MAX_WAV_VALUE
@@ -70,8 +69,8 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument('-f', "--filelist_path", required=True)
-    parser.add_argument('-w', '--waveglow_path',
-                        help='Path to waveglow decoder checkpoint with model')
+    parser.add_argument('-w', '--squeezewav_path',
+                        help='Path to squeezewav decoder checkpoint with model')
     parser.add_argument('-o', "--output_dir", required=True)
     parser.add_argument("-s", "--sigma", default=1.0, type=float)
     parser.add_argument("--sampling_rate", default=22050, type=int)
@@ -81,5 +80,5 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
-    main(args.filelist_path, args.waveglow_path, args.sigma, args.output_dir,
+    main(args.filelist_path, args.squeezewav_path, args.sigma, args.output_dir,
          args.sampling_rate, args.is_fp16, args.denoiser_strength)

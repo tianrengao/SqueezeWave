@@ -35,7 +35,7 @@ from torch.utils.data.distributed import DistributedSampler
 #=====END:   ADDED FOR DISTRIBUTED======
 
 from torch.utils.data import DataLoader
-from glow import WaveGlow, WaveGlowLoss
+from glow import SqueezeWav, SqueezeWavLoss
 from mel2samp import Mel2Samp
 
 def load_checkpoint(
@@ -59,7 +59,7 @@ def load_checkpoint(
 def save_checkpoint(model, optimizer, learning_rate, iteration, filepath):
     print("Saving model and optimizer state at iteration {} to {}".format(
           iteration, filepath))
-    model_for_saving = WaveGlow(**waveglow_config).cuda()
+    model_for_saving = SqueezeWav(**squeezewav_config).cuda()
     model_for_saving.load_state_dict(model.state_dict())
     torch.save({'model': model_for_saving,
                 'iteration': iteration,
@@ -76,8 +76,8 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
         init_distributed(rank, num_gpus, group_name, **dist_config)
     #=====END:   ADDED FOR DISTRIBUTED======
 
-    criterion = WaveGlowLoss(sigma)
-    model = WaveGlow(**waveglow_config).cuda()
+    criterion = SqueezeWavLoss(sigma)
+    model = SqueezeWav(**squeezewav_config).cuda()
     print(model)
     pytorch_total_params = sum(p.numel() for p in model.parameters())
     pytorch_total_params_train = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -99,10 +99,10 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
     iteration = 0 
     if checkpoint_path != "":
         model, optimizer, iteration = load_checkpoint(checkpoint_path, model,
-                                                      optimizer, **waveglow_config)
+                                                      optimizer, **squeezewav_config)
         iteration += 1  # next iteration is iteration + 1
 
-    n_audio_channel =  waveglow_config["n_audio_channel"]
+    n_audio_channel =  squeezewav_config["n_audio_channel"]
     trainset = Mel2Samp(n_audio_channel, **data_config)
     # =====START: ADDED FOR DISTRIBUTED======
     train_sampler = DistributedSampler(trainset) if num_gpus > 1 else None
@@ -156,7 +156,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
                 logger.add_scalar('training_loss', reduced_loss, i + len(train_loader) * epoch)
             if (iteration % iters_per_checkpoint == 0):
                 if rank == 0:
-                    checkpoint_path = "{}/waveglow_{}".format(
+                    checkpoint_path = "{}/squeezewav_{}".format(
                         output_directory, iteration)
                     save_checkpoint(model, optimizer, learning_rate, iteration,
                                     checkpoint_path)
@@ -182,8 +182,8 @@ if __name__ == "__main__":
     data_config = config["data_config"]
     global dist_config
     dist_config = config["dist_config"]
-    global waveglow_config
-    waveglow_config = config["waveglow_config"]
+    global squeezewav_config
+    squeezewav_config = config["squeezewav_config"]
 
     num_gpus = torch.cuda.device_count()
     if num_gpus > 1:

@@ -1,5 +1,5 @@
 ## SqueezeWave: High-Quality Efficient Neural Audio Synthesis
-We proposed a new model called SqueezeWave which achieves more than 25X speed up than WaveGlow without lossing performance. This is the implememtation of SqueezeWave.  (modified 12/30/2019) 
+We proposed a new model called SqueezeWave which achieves more than 25X speed up than SqueezeWave without lossing performance. This is the implememtation of SqueezeWave.  (modified 12/30/2019) 
 
 The paper of SqueezeWave is here: TODO
 
@@ -41,7 +41,7 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
 ```pip3 install -r requirements.txt``` 
 
 3. Install [Apex]
-   ```
+   ```1
    cd ../
    git clone https://www.github.com/nvidia/apex
    cd apex
@@ -75,7 +75,7 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
     |3  | 128  | 128 | TODO |
     |4  | 256  | 128 | TODO |
 
-4. Train your WaveGlow networks
+4. Train your SqueezeWave networks
 
    ```command
    mkdir checkpoints

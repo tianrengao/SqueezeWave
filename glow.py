@@ -51,9 +51,9 @@ class Upsample1d(torch.nn.Module):
         return y
 
 
-class WaveGlowLoss(torch.nn.Module):
+class SqueezeWavLoss(torch.nn.Module):
     def __init__(self, sigma=1.0):
-        super(WaveGlowLoss, self).__init__()
+        super(SqueezeWavLoss, self).__init__()
         self.sigma = sigma
 
     def forward(self, model_output):
@@ -182,10 +182,10 @@ class WN(torch.nn.Module):
         return self.end(audio)
 
 
-class WaveGlow(torch.nn.Module):
+class SqueezeWav(torch.nn.Module):
     def __init__(self, n_mel_channels, n_flows, n_audio_channel, n_early_every,
                  n_early_size, WN_config):
-        super(WaveGlow, self).__init__()        
+        super(SqueezeWav, self).__init__()        
         assert(n_audio_channel % 2 == 0)
         self.n_flows = n_flows
         self.n_audio_channel = n_audio_channel
@@ -282,14 +282,14 @@ class WaveGlow(torch.nn.Module):
 
     @staticmethod
     def remove_weightnorm(model):
-        waveglow = model
-        for WN in waveglow.WN:
+        squeezewav = model
+        for WN in squeezewav.WN:
             WN.start = torch.nn.utils.remove_weight_norm(WN.start)
             # TODO: do we still need to remove the batchnorms?
             # WN.in_layers = remove(WN.in_layers)
             WN.cond_layer = torch.nn.utils.remove_weight_norm(WN.cond_layer)
             WN.res_skip_layers = remove(WN.res_skip_layers) 
-        return waveglow
+        return squeezewav
 
 
 def remove(conv_list):
