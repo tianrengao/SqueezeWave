@@ -61,8 +61,9 @@ class Mel2Samp(torch.utils.data.Dataset):
     This is the main class that calculates the spectrogram and returns the
     spectrogram, audio pair.
     """
-    def __init__(self, n_group, training_files, segment_length, filter_length,
-                 hop_length, win_length, sampling_rate, mel_fmin, mel_fmax):
+    def __init__(self, n_audio_channel, training_files, segment_length,
+                 filter_length, hop_length, win_length, sampling_rate, mel_fmin,
+                 mel_fmax):
         self.audio_files = files_to_list(training_files)
         random.seed(1234)
         random.shuffle(self.audio_files)
@@ -70,7 +71,8 @@ class Mel2Samp(torch.utils.data.Dataset):
                                  hop_length=hop_length,
                                  win_length=win_length,
                                  sampling_rate=sampling_rate,
-                                 mel_fmin=mel_fmin, mel_fmax=mel_fmax, n_group=n_group)
+                                 mel_fmin=mel_fmin, mel_fmax=mel_fmax,
+                                 n_group=n_audio_channel)
         self.segment_length = segment_length
         self.sampling_rate = sampling_rate
 
@@ -122,8 +124,10 @@ if __name__ == "__main__":
 
     with open(args.config) as f:
         data = f.read()
-    data_config = json.loads(data)["data_config"]
-    mel2samp = Mel2Samp(**data_config)
+    config = json.loads(data)
+    data_config = config["data_config"]
+    waveglow_config = config["waveglow_config"]
+    mel2samp = Mel2Samp(waveglow_config['n_audio_channel'], **data_config)
 
     filepaths = files_to_list(args.filelist_path)
 

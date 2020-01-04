@@ -50,7 +50,6 @@ def init_distributed(rank, num_gpus, group_name, dist_backend, dist_url):
  
 #    os.environ['MASTER_ADDR'] = '172.31.44.232'
 #    os.environ['MASTER_PORT'] = '58217'
-#    dist.init_process_group(dist_backend, rank=rank, world_size=num_gpus*2)
     # Initialize distributed communication
     dist.init_process_group(dist_backend, init_method=dist_url,
                             world_size=num_gpus, rank=rank,
