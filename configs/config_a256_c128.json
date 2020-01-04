@@ -25,7 +25,7 @@
         "dist_backend": "nccl",
         "dist_url": "tcp://localhost:54321"
     },
-    "squeezewav_config": {
+    "squeezewave_config": {
         "n_mel_channels": 80,
         "n_flows": 12,
         "n_audio_channel": 256,

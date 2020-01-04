@@ -4,9 +4,9 @@ from stft import STFT
 
 
 class Denoiser(torch.nn.Module):
-    """ Removes model bias from audio produced with squeezewav"""
+    """ Removes model bias from audio produced with squeezewave"""
 
-    def __init__(self, squeezewav, filter_length=1024, n_overlap=4,
+    def __init__(self, squeezewave, filter_length=1024, n_overlap=4,
                  win_length=1024, mode='zeros'):
         super(Denoiser, self).__init__()
         self.stft = STFT(filter_length=filter_length,
@@ -15,18 +15,18 @@ class Denoiser(torch.nn.Module):
         if mode == 'zeros':
             mel_input = torch.zeros(
                 (1, 80, 88),
-                dtype=squeezewav.upsample.weight.dtype,
-                device=squeezewav.upsample.weight.device)
+                dtype=squeezewave.upsample.weight.dtype,
+                device=squeezewave.upsample.weight.device)
         elif mode == 'normal':
             mel_input = torch.randn(
                 (1, 80, 88),
-                dtype=squeezewav.upsample.weight.dtype,
-                device=squeezewav.upsample.weight.device)
+                dtype=squeezewave.upsample.weight.dtype,
+                device=squeezewave.upsample.weight.device)
         else:
             raise Exception("Mode {} if not supported".format(mode))
 
         with torch.no_grad():
-            bias_audio = squeezewav.infer(mel_input, sigma=0.0).float()
+            bias_audio = squeezewave.infer(mel_input, sigma=0.0).float()
             bias_spec, _ = self.stft.transform(bias_audio)
 
         self.register_buffer('bias_spec', bias_spec[:, :, 0][:, :, None])
