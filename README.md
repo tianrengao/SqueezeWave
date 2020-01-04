@@ -1,5 +1,9 @@
 ## SqueezeWave: High-Quality Efficient Neural Audio Synthesis
-We proposed a new model called SqueezeWave which achieves more than 25X speed up than SqueezeWave without lossing performance. This is the implememtation of SqueezeWave.  (modified 12/30/2019) 
+We proposed a new model called SqueezeWave which achieves more than 25X speed up than WaveGlow without lossing performance. This is the implememtation of SqueezeWave.  (modified 12/30/2019) 
+
+The link of WaveGlow is here: https://github.com/NVIDIA/waveglow
+
+The paper of WaveGlow is here: https://arxiv.org/abs/1811.00002
 
 The paper of SqueezeWave is here: TODO
 
