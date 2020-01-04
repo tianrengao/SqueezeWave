@@ -84,6 +84,8 @@ class STFT(torch.nn.Module):
         # similar to librosa, reflect-pad the input
         input_data = input_data.view(num_batches, 1, num_samples)
         pad = ((64 - 1) * self.hop_length + self.filter_length - num_samples) // 2 
+        if pad < 0:
+          pad = self.filter_length // 2
         input_data = F.pad(
             input_data.unsqueeze(1),
             (int(pad), int(pad), 0, 0),
