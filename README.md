@@ -79,7 +79,7 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
 
    ```command
    mkdir checkpoints
-   python train.py -c configs/config_g256_c128.json
+   python train.py -c configs/config_a256_c128.json
    ```
 
    For multi-GPU training replace `train.py` with `distributed.py`.  Only tested with single node and NCCL.
@@ -88,13 +88,18 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
 
 5. Make test set mel-spectrograms
 
-   `python mel2samp.py -f test_files.txt -o . -c config.json`
+   ```
+   mkdir -p eval/mels
+   python3 mel2samp.py -f test_files.txt -o eval/mels -c configs/config_a128_c256.json
+   ```
 
-6. Do inference with your network
+6. Run inference on the test data. 
 
    ```command
-   ls *.pt > mel_files.txt
-   python3 inference.py -f mel_files.txt -w checkpoints/SqueezeWave_10000 -o . --is_fp16 -s 0.6
+   ls eval/mels > eval/mel_files.txt
+   sed -i -e 's_.*_eval/mels/&_' eval/mel_files.txt
+   mkdir -p eval/output
+   python3 inference.py -f eval/mel_files.txt -w checkpoints/SqueezeWave_10000 -o eval/output --is_fp16 -s 0.6
    ```
 
 [//]: # (TODO)
