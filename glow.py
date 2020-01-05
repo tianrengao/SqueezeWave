@@ -291,6 +291,23 @@ class SqueezeWave(torch.nn.Module):
             WN.res_skip_layers = remove(WN.res_skip_layers) 
         return squeezewave
 
+def fuse_conv_and_bn(conv, bn):
+    fusedconv = torch.nn.Conv1d(
+            conv.in_channels,
+            conv.out_channels,
+            kernel_size = conv.kernel_size,
+            padding=conv.padding,
+            bias=True)
+    w_conv = conv.weight.clone().view(conv.out_channels, -1)
+    w_bn = torch.diag(bn.weight.div(torch.sqrt(bn.eps+bn.running_var)))
+    fusedconv.weight.copy_( torch.mm(w_bn, w_conv).view(fusedconv.weight.size()) )
+    if conv.bias is not None:
+        b_conv = conv.bias
+    else:
+        b_conv = torch.zeros( conv.weight.size(0) )
+    b_bn = bn.bias - bn.weight.mul(bn.running_mean).div(torch.sqrt(bn.running_var + bn.eps))
+    fusedconv.bias.copy_( b_conv + b_bn )
+    return fusedconv
 
 def remove(conv_list):
     new_conv_list = torch.nn.ModuleList()
