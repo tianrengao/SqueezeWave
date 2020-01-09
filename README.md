@@ -26,6 +26,10 @@ Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuM
 
 ## Demo
 
+<video src="https://github.com/tianrengao/testMOS/blob/master/audio_files/base/LJ001-0051.wav_synthesis.wav" controls="controls" width="640" height="320" autoplay="autoplay">
+Your browser does not support the video tag.
+</video>
+
 <audio src="https://github.com/tianrengao/testMOS/blob/master/audio_files/base/LJ001-0051.wav_synthesis.wav" controls="controls">
 Your browser does not support the audio tag.
 </audio>
