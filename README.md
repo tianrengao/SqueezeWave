@@ -24,6 +24,12 @@ More details of these four models are here: https://docs.google.com/document/d/1
 
 Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuMJMtA97PP5ht44E?usp=drive_open#scrollTo=BM3EBi5twBuz
 
+## Demo
+
+<audio src="https://github.com/tianrengao/testMOS/blob/master/audio_files/base/LJ001-0051.wav_synthesis.wav" controls="controls">
+Your browser does not support the audio tag.
+</audio>
+
 ## Setup
 0. (Optional) Create a virtual environment
 
