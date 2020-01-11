@@ -156,7 +156,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
                 logger.add_scalar('training_loss', reduced_loss, i + len(train_loader) * epoch)
             if (iteration % iters_per_checkpoint == 0):
                 if rank == 0:
-                    checkpoint_path = "{}/squeezewave_{}".format(
+                    checkpoint_path = "{}/SqueezeWave_{}".format(
                         output_directory, iteration)
                     save_checkpoint(model, optimizer, learning_rate, iteration,
                                     checkpoint_path)

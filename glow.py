@@ -321,11 +321,3 @@ def remove(conv_list):
         new_conv_list.append(old_conv)
     return new_conv_list
 
-
-def remove_dw(in_layers):
-    new_conv_list = torch.nn.ModuleList()
-    for conv in in_layers:
-        depthwise = torch.nn.utils.remove_weight_norm(conv[0])
-        pointwise = torch.nn.utils.remove_weight_norm(conv[1])
-        new_conv_list.append(torch.nn.Sequential(depthwise, pointwise).cuda())
-    return new_conv_list
