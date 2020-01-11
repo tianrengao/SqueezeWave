@@ -285,8 +285,7 @@ class SqueezeWave(torch.nn.Module):
         squeezewave = model
         for WN in squeezewave.WN:
             WN.start = torch.nn.utils.remove_weight_norm(WN.start)
-            # TODO: do we still need to remove the batchnorms?
-            # WN.in_layers = remove(WN.in_layers)
+            WN.in_layers = remove_batch_norm(WN.in_layers)
             WN.cond_layer = torch.nn.utils.remove_weight_norm(WN.cond_layer)
             WN.res_skip_layers = remove(WN.res_skip_layers) 
         return squeezewave
@@ -297,17 +296,28 @@ def fuse_conv_and_bn(conv, bn):
             conv.out_channels,
             kernel_size = conv.kernel_size,
             padding=conv.padding,
-            bias=True)
+            bias=True,
+            groups=conv.groups)
     w_conv = conv.weight.clone().view(conv.out_channels, -1)
     w_bn = torch.diag(bn.weight.div(torch.sqrt(bn.eps+bn.running_var)))
-    fusedconv.weight.copy_( torch.mm(w_bn, w_conv).view(fusedconv.weight.size()) )
+    w_bn = w_bn.clone()
+    a = torch.mm(w_bn, w_conv).view(fusedconv.weight.size())
+    fusedconv.weight.data = a
     if conv.bias is not None:
         b_conv = conv.bias
     else:
         b_conv = torch.zeros( conv.weight.size(0) )
     b_bn = bn.bias - bn.weight.mul(bn.running_mean).div(torch.sqrt(bn.running_var + bn.eps))
-    fusedconv.bias.copy_( b_conv + b_bn )
+    fusedconv.bias.data = ( b_conv + b_bn )
     return fusedconv
+
+def remove_batch_norm(conv_list):
+    new_conv_list = torch.nn.ModuleList()
+    for old_conv in conv_list:
+        depthwise = fuse_conv_and_bn(old_conv[1], old_conv[0])
+        pointwise = old_conv[2]
+        new_conv_list.append(torch.nn.Sequential(depthwise, pointwise))
+    return new_conv_list
 
 def remove(conv_list):
     new_conv_list = torch.nn.ModuleList()
