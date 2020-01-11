@@ -5,7 +5,7 @@ We propose a new model called SqueezeWave which achieves 60x - 332x MAC reductio
 
 Link to the paper: TODO
 
-Audio samples of SqueezeWave is here: TODO
+Audio samples of SqueezeWave is here: https://tianrengao.github.io/SqueezeWaveDemo/
 
 
 We introduce 4 variants of SqueezeWave model in our paper. See the table below.
