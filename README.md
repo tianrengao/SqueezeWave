@@ -26,13 +26,7 @@ A detailed MAC calculation can be found from [here](https://colab.research.googl
 
 ## Demo
 
-<video src="https://github.com/tianrengao/testMOS/blob/master/audio_files/base/LJ001-0051.wav_synthesis.wav" controls="controls" width="640" height="320" autoplay="autoplay">
-Your browser does not support the video tag.
-</video>
-
-<audio src="https://github.com/tianrengao/testMOS/blob/master/audio_files/base/LJ001-0051.wav_synthesis.wav" controls="controls">
-Your browser does not support the audio tag.
-</audio>
+Please checkout the synthesized voices from here (TODO). 
 
 ## Setup
 0. (Optional) Create a virtual environment
