@@ -1,13 +1,11 @@
 ## SqueezeWave: High-Quality Efficient Neural Audio Synthesis
-We proposed a new model called SqueezeWave which achieves more than 25X speed up than WaveGlow without lossing performance. This is the implememtation of SqueezeWave.  (modified 12/30/2019) 
+By Tianren Gao *, Bohan Zhai *, Flora Xue, Daniel Rothchild, Bichen Wu, Joseph Gonzalez, and Kurt Keutzer (UC Berkeley)
 
-The link of WaveGlow is here: https://github.com/NVIDIA/waveglow
+We propose a new model called SqueezeWave which achieves 60x - 332x MAC reduction over WaveGlow without performance loss. 
 
-The paper of WaveGlow is here: https://arxiv.org/abs/1811.00002
+Link to the paper: TODO
 
-The paper of SqueezeWave is here: TODO
-
-The demo of SqueezeWave is here: TODO
+Audio samples of SqueezeWave is here: TODO
 
 
 We introduce 4 variants of SqueezeWave model in our paper. See the table below.
@@ -23,10 +21,6 @@ We introduce 4 variants of SqueezeWave model in our paper. See the table below.
 
 
 A detailed MAC calculation can be found from [here](https://colab.research.google.com/drive/13ZCmAMhHAcG6yixCofSMff2bp1om47mu)
-
-## Demo
-
-Please checkout the synthesized voices from here (TODO). 
 
 ## Setup
 0. (Optional) Create a virtual environment
@@ -109,6 +103,9 @@ Please checkout the synthesized voices from here (TODO).
    mkdir -p eval/output
    python3 inference.py -f eval/mel_files.txt -w checkpoints/SqueezeWave_10000 -o eval/output --is_fp16 -s 0.6
    ```
+## Credits
+The implementation of this work is based on WaveGlow: https://github.com/NVIDIA/waveglow
+
 
 [//]: # (TODO)
 [//]: # (PROVIDE INSTRUCTIONS FOR DOWNLOADING LJS)
