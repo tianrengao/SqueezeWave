@@ -12,17 +12,8 @@ The demo of SqueezeWave is here: TODO
 
 We introduce 4 variants of SqueezeWave model in our paper. See the table below.
 
-| Model  | L , C | Internal Channel | GFLOPs | MOS |
-| ------------- | ------------- | ------------- | ------------- |------------- |
-|1  | 128 , 128  | 256 -> 512  | 18 |TODO |
-|2  | 64 , 256  | 256 -> 512  | 9 |TODO |
-|3  | 128 , 128  | 128 -> 256  | TODO |TODO |
-|4  | 64 , 256  | 128 -> 256  | TODO |TODO |
 
-More details of these four models are here: https://docs.google.com/document/d/1VsgJ-Br-pGTGLIQXgPBWdavNR9yhHlj9OcvnUrJx79I/edit
-
-
-Flop counts is here: https://colab.research.google.com/drive/1aV2u-u3fO2bTdtQVuMJMtA97PP5ht44E?usp=drive_open#scrollTo=BM3EBi5twBuz
+A detailed MAC calculation can be found from [here](https://colab.research.google.com/drive/13ZCmAMhHAcG6yixCofSMff2bp1om47mu)
 
 ## Demo
 
