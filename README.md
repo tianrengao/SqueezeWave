@@ -13,6 +13,15 @@ The demo of SqueezeWave is here: TODO
 We introduce 4 variants of SqueezeWave model in our paper. See the table below.
 
 
+   | Model   | length | n_channels| MACs  | Reduction | MOS  |
+   | ------- | ------ | --------- | ----- | --------- | ---- |
+   |WaveGLow |  2048  | 8         | 228.9 | 1x        | TODO |
+   |1        |  128   | 256       | 3.78  | 60x       | TODO |
+   |2        |  64    | 256       | 2.16  | 106x      | TODO |
+   |3        |  128   | 128       | 1.06  | 214x      | TODO |
+   |4        |  64    | 128       | 0.68  | 332x      | TODO |
+
+
 A detailed MAC calculation can be found from [here](https://colab.research.google.com/drive/13ZCmAMhHAcG6yixCofSMff2bp1om47mu)
 
 ## Demo
