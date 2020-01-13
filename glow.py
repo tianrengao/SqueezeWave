@@ -296,15 +296,14 @@ def fuse_conv_and_bn(conv, bn):
     w_conv = conv.weight.clone().view(conv.out_channels, -1)
     w_bn = torch.diag(bn.weight.div(torch.sqrt(bn.eps+bn.running_var)))
     w_bn = w_bn.clone()
-    a = torch.mm(w_bn, w_conv).view(fusedconv.weight.size())
-    fusedconv.weight.data = a
+    fusedconv.weight.data = torch.mm(w_bn, w_conv).view(fusedconv.weight.size())
     if conv.bias is not None:
         b_conv = conv.bias
     else:
         b_conv = torch.zeros( conv.weight.size(0) )
     b_bn = bn.bias - bn.weight.mul(bn.running_mean).div(torch.sqrt(bn.running_var + bn.eps))
     b_bn = torch.unsqueeze(b_bn, 1)
-    bn_3 = torch.cat((torch.cat((bn_2, b_bn), 1), b_bn), 1)
+    bn_3 = torch.cat((torch.cat((b_bn, b_bn), 1), b_bn), 1)
     b = torch.matmul(w_conv, torch.transpose(bn_3, 0, 1))[range(b_bn.size()[0]), range(b_bn.size()[0])]
     fusedconv.bias.data = ( b_conv + b )
     return fusedconv
