@@ -308,7 +308,10 @@ def fuse_conv_and_bn(conv, bn):
     else:
         b_conv = torch.zeros( conv.weight.size(0) )
     b_bn = bn.bias - bn.weight.mul(bn.running_mean).div(torch.sqrt(bn.running_var + bn.eps))
-    fusedconv.bias.data = ( b_conv + b_bn )
+    b_bn = torch.unsqueeze(b_bn, 1)
+    bn_3 = torch.cat((torch.cat((bn_2, b_bn), 1), b_bn), 1)
+    b = torch.matmul(w_conv, torch.transpose(bn_3, 0, 1))[range(b_bn.size()[0]), range(b_bn.size()[0])]
+    fusedconv.bias.data = ( b_conv + b_final_bn )
     return fusedconv
 
 def remove_batch_norm(conv_list):
