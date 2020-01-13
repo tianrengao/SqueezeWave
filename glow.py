@@ -127,19 +127,15 @@ class WN(torch.nn.Module):
         self.n_channels = n_channels
         self.in_layers = torch.nn.ModuleList()
         self.res_skip_layers = torch.nn.ModuleList()
-        in_layer_channels = n_channels # in_layer's input & output channel size
-        res_skip_channels = n_channels # res_skip_layer's output channel size
         self.upsample = Upsample1d(2)        
-        start = torch.nn.Conv1d(n_in_channels, in_layer_channels, 1)
+        start = torch.nn.Conv1d(n_in_channels, n_channels, 1)
         start = torch.nn.utils.weight_norm(start, name='weight')
         self.start = start
-        end = torch.nn.Conv1d(in_layer_channels, 2*n_in_channels, 1)
+        end = torch.nn.Conv1d(n_channels, 2*n_in_channels, 1)
         end.weight.data.zero_()
         end.bias.data.zero_()
         self.end = end
         
-        # This part is written by @tianrengao
-         
         # cond_layer
         cond_layer = torch.nn.Conv1d(n_mel_channels, 2*n_channels*n_layers, 1)
         self.cond_layer = torch.nn.utils.weight_norm(cond_layer, name='weight')
@@ -147,10 +143,10 @@ class WN(torch.nn.Module):
             dilation = 1
             padding = int((kernel_size*dilation - dilation)/2)
             # depthwise separable convolution
-            depthwise = torch.nn.Conv1d(in_layer_channels, in_layer_channels, 3,
+            depthwise = torch.nn.Conv1d(n_channels, n_channels, 3,
                 dilation=dilation, padding=padding,
-                groups=in_layer_channels).cuda()
-            pointwise = torch.nn.Conv1d(in_layer_channels, 2*n_channels, 1).cuda()
+                groups=n_channels).cuda()
+            pointwise = torch.nn.Conv1d(n_channels, 2*n_channels, 1).cuda()
             bn = torch.nn.BatchNorm1d(n_channels) 
             self.in_layers.append(torch.nn.Sequential(bn, depthwise, pointwise))
             # res_skip_layer
@@ -244,7 +240,6 @@ class SqueezeWave(torch.nn.Module):
         return torch.cat(output_audio, 1), log_s_list, log_det_W_list
 
     def infer(self, spect, sigma=1.0):
-        # this part is written by @bohanzhai
         spect_size = spect.size()
         l = spect.size(2)*(256 // self.n_audio_channel)
         if spect.type() == 'torch.cuda.HalfTensor':
@@ -329,11 +324,3 @@ def remove(conv_list):
         new_conv_list.append(old_conv)
     return new_conv_list
 
-
-def remove_dw(in_layers):
-    new_conv_list = torch.nn.ModuleList()
-    for conv in in_layers:
-        depthwise = torch.nn.utils.remove_weight_norm(conv[0])
-        pointwise = torch.nn.utils.remove_weight_norm(conv[1])
-        new_conv_list.append(torch.nn.Sequential(depthwise, pointwise).cuda())
-    return new_conv_list
