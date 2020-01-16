@@ -1,4 +1,4 @@
-## SqueezeWave: High-Quality Efficient Neural Audio Synthesis
+## SqueezeWave: Extremely Lightweight Vocoders for On-device Speech Synthesis
 By Bohan Zhai *, Tianren Gao *, Flora Xue, Daniel Rothchild, Bichen Wu, Joseph Gonzalez, and Kurt Keutzer (UC Berkeley)
 
 We propose a new model called SqueezeWave which achieves 60x - 332x MAC reduction over WaveGlow without performance loss. 
