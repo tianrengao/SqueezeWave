@@ -1,3 +1,6 @@
+# We retain the copyright notice by NVIDIA from the original code. However, we
+# we reserve our rights on the modifications based on the original code.
+#
 # *****************************************************************************
 #  Copyright (c) 2018, NVIDIA CORPORATION.  All rights reserved.
 #
