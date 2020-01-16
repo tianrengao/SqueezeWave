@@ -3,14 +3,15 @@ By Tianren Gao *, Bohan Zhai *, Flora Xue, Daniel Rothchild, Bichen Wu, Joseph G
 
 We propose a new model called SqueezeWave which achieves 60x - 332x MAC reduction over WaveGlow without performance loss. 
 
+Link to the paper: TODO
+
 ### Abstract
 Automatic speech synthesis is a challenging task that is becoming increasingly important as edge devices beginto interact with users through speech.   Typical text-to-speech pipelines include a vocoder,  which translatesintermediate audio representations into an audio waveform. Most existing vocoders are difficult to parallelize sinceeach generated sample is conditioned on previous samples. WaveGlow is a flow-based feed-forward alternativeto these auto-regressive models (Prenger et al., 2019).  However, while WaveGlow can be easily parallelized,the model is too expensive for real-time speech synthesis on the edge.  This paper presents SqueezeWave, afamily of lightweight vocoders based on WaveGlow that can generate audio of similar quality to WaveGlowwith 61x - 214x fewer MACs.  Code, trained models, and generated audio are publicly available athttps://github.com/BohanZhai/SqueezeWave.
 
-Link to the paper: TODO
-
+### Samples
 Audio samples of SqueezeWave are here: https://tianrengao.github.io/SqueezeWaveDemo/
 
-
+### Results
 We introduce 4 variants of SqueezeWave in our paper. See the table below.
 
 
@@ -22,7 +23,7 @@ We introduce 4 variants of SqueezeWave in our paper. See the table below.
    |SqueezeWave-128S |  128   | 128       | 1.06  | 214x      | 3.79±0.05 |
    |SqueezeWave-64S  |  64    | 128       | 0.68  | 332x      | 2.74±0.04 |
 
-
+### Notes
 A detailed MAC calculation can be found from [here](https://colab.research.google.com/drive/13ZCmAMhHAcG6yixCofSMff2bp1om47mu)
 
 ## Setup
