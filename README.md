@@ -55,7 +55,8 @@ A detailed MAC calculation can be found from [here](https://colab.research.googl
 
 1. Download our [published model]
 2. Download [mel-spectrograms]
-3. Generate audio `python3 inference.py -f <(ls mel_spectrograms/*.pt) -w SqueezeWave.pt -o . --is_fp16 -s 0.6`  
+3. Generate audio 
+```python3 inference.py -f <(ls mel_spectrograms/*.pt) -w SqueezeWave.pt -o . --is_fp16 -s 0.6```  
 
 
 ## Train your own model
