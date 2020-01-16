@@ -1,4 +1,7 @@
 """
+We retain the copyright notice from the original author. However, we reserve 
+our rights on the modifications based on the original code.
+
 BSD 3-Clause License
 
 Copyright (c) 2017, Prem Seetharaman
