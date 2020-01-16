@@ -1,12 +1,9 @@
 ## SqueezeWave: High-Quality Efficient Neural Audio Synthesis
-By Tianren Gao *, Bohan Zhai *, Flora Xue, Daniel Rothchild, Bichen Wu, Joseph Gonzalez, and Kurt Keutzer (UC Berkeley)
+By Bohan Zhai *, Tianren Gao *, Flora Xue, Daniel Rothchild, Bichen Wu, Joseph Gonzalez, and Kurt Keutzer (UC Berkeley)
 
 We propose a new model called SqueezeWave which achieves 60x - 332x MAC reduction over WaveGlow without performance loss. 
 
 Link to the paper: TODO
-
-### Abstract
-Automatic speech synthesis is a challenging task that is becoming increasingly important as edge devices beginto interact with users through speech.   Typical text-to-speech pipelines include a vocoder,  which translatesintermediate audio representations into an audio waveform. Most existing vocoders are difficult to parallelize sinceeach generated sample is conditioned on previous samples. WaveGlow is a flow-based feed-forward alternativeto these auto-regressive models (Prenger et al., 2019).  However, while WaveGlow can be easily parallelized,the model is too expensive for real-time speech synthesis on the edge.  This paper presents SqueezeWave, afamily of lightweight vocoders based on WaveGlow that can generate audio of similar quality to WaveGlowwith 61x - 214x fewer MACs.  Code, trained models, and generated audio are publicly available athttps://github.com/BohanZhai/SqueezeWave.
 
 ### Samples
 Audio samples of SqueezeWave are here: https://tianrengao.github.io/SqueezeWaveDemo/
