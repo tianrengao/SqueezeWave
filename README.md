@@ -7,7 +7,7 @@ Link to the paper: [paper]. If you find this work useful, please consider citing
 
    ```
    @inproceedings{squeezewave,
-      Author = {Bohan Zhai, Tianren Gao, Flora Xue, Daniel Rothchild, Bichen Wu, Joseph Gonzalez, Kurt Keutzer },
+      Author = {Bohan Zhai, Tianren Gao, Flora Xue, Daniel Rothchild, Bichen Wu, Joseph Gonzalez, Kurt Keutzer},
       Title = {SqueezeWave: Extremely Lightweight Vocoders for On-device Speech Synthesis},
       Journal = {arXiv:2001.05685},
       Year = {2020}
