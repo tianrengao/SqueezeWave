@@ -20,8 +20,8 @@ We introduce 4 variants of SqueezeWave in our paper. See the table below.
    |SqueezeWave-128S |  128   | 128       | 1.06  | 214x      | 3.79±0.05 |
    |SqueezeWave-64S  |  64    | 128       | 0.68  | 332x      | 2.74±0.04 |
 
-### Notes
-A detailed MAC calculation can be found from [here](https://colab.research.google.com/drive/13ZCmAMhHAcG6yixCofSMff2bp1om47mu)
+### Model Complexity
+A detailed MAC calculation can be found from [here](https://github.com/tianrengao/SqueezeWave/blob/master/SqueezeWave_computational_complexity.ipynb)
 
 ## Setup
 0. (Optional) Create a virtual environment
