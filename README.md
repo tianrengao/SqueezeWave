@@ -70,7 +70,7 @@ A detailed MAC calculation can be found from [here](https://github.com/tianrenga
    ls data/*.wav | head -n10 > test_files.txt
    ```
 
-3. We provide 4 model configurations with audio channel and channel numbers specified in the table below. The configuration files are under ```^/configs``` directory. To choose the model you want to train, select the corresponding configuration file.
+3. We provide 4 model configurations with audio channel and channel numbers specified in the table below. The configuration files are under ```/configs``` directory. To choose the model you want to train, select the corresponding configuration file.
 
     | Model  | n_audio_channel | n_channels|
     | ------------- | ------------- | ------------- |
