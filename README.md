@@ -60,11 +60,11 @@ A detailed MAC calculation can be found from [here](https://github.com/tianrenga
    python setup.py install
    ```
 
-## Generate audio with our pre-existing model
+## Generate audio with our pretrained model
 
-1. Download our [pretrained models]. We provide 4 pre-trained models as described in the paper.
+1. Download our [pretrained models]. We provide 4 pretrained models as described in the paper.
 2. Download [mel-spectrograms]
-3. Generate audio. Please replace `SqueezeWave.pt` to the specific pre-trained model's name.
+3. Generate audio. Please replace `SqueezeWave.pt` to the specific pretrained model's name.
 
    ```python3 inference.py -f <(ls mel_spectrograms/*.pt) -w SqueezeWave.pt -o . --is_fp16 -s 0.6```
 
@@ -82,14 +82,7 @@ A detailed MAC calculation can be found from [here](https://github.com/tianrenga
 
 3. We provide 4 model configurations with audio channel and channel numbers specified in the table below. The configuration files are under ```/configs``` directory. To choose the model you want to train, select the corresponding configuration file.
 
-    | Model  | n_audio_channel | n_channels|
-    | ------------- | ------------- | ------------- |
-    |1  | 128  | 256 |
-    |2  | 256  | 256 |
-    |3  | 128  | 128 |
-    |4  | 256  | 128 |
-
-4. Train your SqueezeWave networks
+4. Train your SqueezeWave model
 
    ```command
    mkdir checkpoints
