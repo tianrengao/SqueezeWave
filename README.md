@@ -1,9 +1,16 @@
 ## SqueezeWave: Extremely Lightweight Vocoders for On-device Speech Synthesis
 By Bohan Zhai *, Tianren Gao *, Flora Xue, Daniel Rothchild, Bichen Wu, Joseph Gonzalez, and Kurt Keutzer (UC Berkeley)
 
-We propose a family of models called SqueezeWave that achieve 61x - 332x MAC reduction over WaveGlow with similar performances. 
+We propose a family of models called SqueezeWave that achieve 61x - 332x MAC reduction over WaveGlow with similar performances. Link to the paper: [paper]. If you find this work useful, please consider citing it as 
 
-Link to the paper: TODO
+   ```
+   @inproceedings{squeezewave,
+      Author = {Bohan Zhai, Tianren Gao, Flora Xue, Daniel Rothchild, Bichen Wu, Joseph Gonzalez, Kurt Keutzer },
+      Title = {SqueezeWave: Extremely Lightweight Vocoders for On-device Speech Synthesis},
+      Journal = {arXiv:2001.05685},
+      Year = {2020}
+   }
+   ```
 
 ### Samples
 Audio samples of SqueezeWave are here: https://tianrengao.github.io/SqueezeWaveDemo/
@@ -116,7 +123,7 @@ The implementation of this work is based on WaveGlow: https://github.com/NVIDIA/
 [//]: # (PROVIDE INSTRUCTIONS FOR DOWNLOADING LJS)
 [pytorch 1.0]: https://github.com/pytorch/pytorch#installation
 [website]: https://nv-adlr.github.io/WaveGlow
-[paper]: https://arxiv.org/abs/1811.00002
+[paper]: https://arxiv.org/abs/2001.05685
 [WaveNet implementation]: https://github.com/r9y9/wavenet_vocoder
 [Glow]: https://blog.openai.com/glow/
 [WaveNet]: https://deepmind.com/blog/wavenet-generative-model-raw-audio/
