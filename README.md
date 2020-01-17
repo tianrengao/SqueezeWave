@@ -53,10 +53,10 @@ A detailed MAC calculation can be found from [here](https://colab.research.googl
 
 ## Generate audio with our pre-existing model
 
-1. Download our [published model]
+1. Download our [published model]. We have 4 pretrain models corresponding to the 4 models we proposed in the paper.
 2. Download [mel-spectrograms]
-3. Generate audio 
-```python3 inference.py -f <(ls mel_spectrograms/*.pt) -w SqueezeWave.pt -o . --is_fp16 -s 0.6```  
+3. Generate audio. Please replace `SqueezeWave.pt` to the pretrain model's name
+```python3 inference.py -f <(ls mel_spectrograms/*.pt) -w SqueezeWave.pt -o . --is_fp16 -s 0.6```
 
 
 ## Train your own model
