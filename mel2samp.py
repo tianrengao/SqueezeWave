@@ -101,7 +101,9 @@ class Mel2Samp(torch.utils.data.Dataset):
             audio_start = random.randint(0, max_audio_start)
             audio = audio[audio_start:audio_start+self.segment_length]
         else:
-            audio = torch.nn.functional.pad(audio, (0, self.segment_length - audio.size(0)), 'constant').data
+            audio = torch.nn.functional.pad(
+                audio, (0, self.segment_length - audio.size(0)),
+                'constant').data
 
         mel = self.get_mel(audio)
         audio = audio / MAX_WAV_VALUE
@@ -129,8 +131,8 @@ if __name__ == "__main__":
         data = f.read()
     config = json.loads(data)
     data_config = config["data_config"]
-    squeezewave_config = config["squeeze_config"]
-    mel2samp = Mel2Samp(squeeze_config['n_audio_channel'], **data_config)
+    squeezewave_config = config["squeezewave_config"]
+    mel2samp = Mel2Samp(squeezewave_config['n_audio_channel'], **data_config)
 
     filepaths = files_to_list(args.filelist_path)
 
