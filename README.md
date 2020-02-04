@@ -43,7 +43,7 @@ A detailed MAC calculation can be found from [here](https://github.com/tianrenga
 1. Clone our repo and initialize submodule
 
    ```command
-   git clone https://github.com/BohanZhai/SqueezeWave.git
+   git clone https://github.com/tianrengao/SqueezeWave.git
    cd SqueezeWave
    git submodule init
    git submodule update
