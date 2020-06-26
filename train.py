@@ -62,7 +62,7 @@ def load_checkpoint(
 def save_checkpoint(model, optimizer, learning_rate, iteration, filepath):
     print("Saving model and optimizer state at iteration {} to {}".format(
           iteration, filepath))
-    model_for_saving = SqueezeWave(**squeezewave_config).cuda()
+    model_for_saving = SqueezeWave(**squeezewave_config)
     model_for_saving.load_state_dict(model.state_dict())
     torch.save({'model': model_for_saving,
                 'iteration': iteration,
@@ -80,7 +80,7 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
     #=====END:   ADDED FOR DISTRIBUTED======
 
     criterion = SqueezeWaveLoss(sigma)
-    model = SqueezeWave(**squeezewave_config).cuda()
+    model = SqueezeWave(**squeezewave_config).to('cuda')
     print(model)
     pytorch_total_params = sum(p.numel() for p in model.parameters())
     pytorch_total_params_train = sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -136,8 +136,8 @@ def train(num_gpus, rank, group_name, output_directory, epochs, learning_rate,
             model.zero_grad()
 
             mel, audio = batch
-            mel = torch.autograd.Variable(mel.cuda())
-            audio = torch.autograd.Variable(audio.cuda())
+            mel = torch.autograd.Variable(mel.cuda().half())
+            audio = torch.autograd.Variable(audio.cuda().half())
             outputs = model((mel, audio))
 
             loss = criterion(outputs)

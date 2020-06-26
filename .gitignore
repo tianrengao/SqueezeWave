@@ -1,0 +1,10 @@
+**/__pycache__
+data/
+checkpoints/
+mel_spectrograms/
+lightning_logs/
+.vscode/
+
+*.wav
+train_files.txt
+test_files.txt

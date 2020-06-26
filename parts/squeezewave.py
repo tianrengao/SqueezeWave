@@ -1,42 +1,13 @@
-# We retain the copyright notice by NVIDIA from the original code. However, we
-# we reserve our rights on the modifications based on the original code.
-#
-# *****************************************************************************
-#  Copyright (c) 2018, NVIDIA CORPORATION.  All rights reserved.
-#
-#  Redistribution and use in source and binary forms, with or without
-#  modification, are permitted provided that the following conditions are met:
-#      * Redistributions of source code must retain the above copyright
-#        notice, this list of conditions and the following disclaimer.
-#      * Redistributions in binary form must reproduce the above copyright
-#        notice, this list of conditions and the following disclaimer in the
-#        documentation and/or other materials provided with the distribution.
-#      * Neither the name of the NVIDIA CORPORATION nor the
-#        names of its contributors may be used to endorse or promote products
-#        derived from this software without specific prior written permission.
-#
-#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-#  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-#  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-#  DISCLAIMED. IN NO EVENT SHALL NVIDIA CORPORATION BE LIABLE FOR ANY
-#  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
-#  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
-#  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
-#  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-#  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-# *****************************************************************************
+from typing import Tuple
 import torch
 from torch.autograd import Variable
 import torch.nn.functional as F
-import numpy as np
 
 
 @torch.jit.script
 def fused_add_tanh_sigmoid_multiply(input_a, input_b, n_channels):
     n_channels_int = n_channels[0]
-    in_act = input_a+input_b
+    in_act = input_a + input_b
     t_act = torch.tanh(in_act[:, :n_channels_int, :])
     s_act = torch.sigmoid(in_act[:, n_channels_int:, :])
     acts = t_act * s_act
@@ -54,48 +25,30 @@ class Upsample1d(torch.nn.Module):
         return y
 
 
-class SqueezeWaveLoss(torch.nn.Module):
-    def __init__(self, sigma=1.0):
-        super(SqueezeWaveLoss, self).__init__()
-        self.sigma = sigma
-
-    def forward(self, model_output):
-        z, log_s_list, log_det_W_list = model_output
-        for i, log_s in enumerate(log_s_list):
-            if i == 0:
-                log_s_total = torch.sum(log_s)
-                log_det_W_total = log_det_W_list[i]
-            else:
-                log_s_total = log_s_total + torch.sum(log_s)
-                log_det_W_total += log_det_W_list[i]
-
-        loss = torch.sum(z*z)/(2*self.sigma*self.sigma) - log_s_total - log_det_W_total
-        return loss/(z.size(0)*z.size(1)*z.size(2))
-
-
 class Invertible1x1Conv(torch.nn.Module):
     """
     The layer outputs both the convolution, and the log determinant
     of its weight matrix.  If reverse=True it does convolution with
     inverse
     """
+
     def __init__(self, c):
         super(Invertible1x1Conv, self).__init__()
-        self.conv = torch.nn.Conv1d(c, c, kernel_size=1, stride=1, padding=0,
-                                    bias=False)
+        self.conv = torch.nn.Conv1d(c, c, kernel_size=1, stride=1, padding=0, bias=False)
 
         # Sample a random orthonormal matrix to initialize weights
         W = torch.qr(torch.FloatTensor(c, c).normal_())[0]
 
         # Ensure determinant is 1.0 not -1.0
         if torch.det(W) < 0:
-            W[:,0] = -1*W[:,0]
+            W[:, 0] = -1 * W[:, 0]
         W = W.view(c, c, 1)
         self.conv.weight.data = W
 
-    def forward(self, z, reverse=False):
+    def forward(self, z, reverse: bool = False):
         # shape
         batch_size, group_size, n_of_groups = z.size()
+
         W = self.conv.weight.squeeze()
 
         if reverse:
@@ -103,16 +56,19 @@ class Invertible1x1Conv(torch.nn.Module):
                 # Reverse computation
                 W_inverse = W.float().inverse()
                 W_inverse = Variable(W_inverse[..., None])
-                if z.type() == 'torch.cuda.HalfTensor':
+                if z.dtype == torch.half:
                     W_inverse = W_inverse.half()
                 self.W_inverse = W_inverse
             z = F.conv1d(z, self.W_inverse, bias=None, stride=1, padding=0)
             return z
         else:
             # Forward computation
-            log_det_W = batch_size * n_of_groups * torch.logdet(W)
+            log_det_W = batch_size * n_of_groups * torch.logdet(W.float())
             z = self.conv(z)
-            return z, log_det_W
+            return (
+                z,
+                log_det_W,
+            )
 
 
 class WN(torch.nn.Module):
@@ -121,8 +77,7 @@ class WN(torch.nn.Module):
     from WaveNet is the convolutions need not be causal.  There is also no dilation
     size reset.  The dilation only doubles on each layer
     """
-    def __init__(self, n_in_channels, n_mel_channels, n_layers, n_channels,
-                 kernel_size):
+    def __init__(self, n_in_channels, n_mel_channels, n_layers, n_channels, kernel_size):
         super(WN, self).__init__()
         assert(kernel_size % 2 == 1)
         assert(n_channels % 2 == 0)
@@ -148,9 +103,9 @@ class WN(torch.nn.Module):
             # depthwise separable convolution
             depthwise = torch.nn.Conv1d(n_channels, n_channels, 3,
                 dilation=dilation, padding=padding,
-                groups=n_channels).cuda()
-            pointwise = torch.nn.Conv1d(n_channels, 2*n_channels, 1).cuda()
-            bn = torch.nn.BatchNorm1d(n_channels) 
+                groups=n_channels)
+            pointwise = torch.nn.Conv1d(n_channels, 2*n_channels, 1)
+            bn = torch.nn.BatchNorm1d(n_channels)
             self.in_layers.append(torch.nn.Sequential(bn, depthwise, pointwise))
             # res_skip_layer
             res_skip_layer = torch.nn.Conv1d(n_channels, n_channels, 1)
@@ -182,31 +137,32 @@ class WN(torch.nn.Module):
 
 
 class SqueezeWave(torch.nn.Module):
-    def __init__(self, n_mel_channels, n_flows, n_audio_channel, n_early_every,
-                 n_early_size, WN_config):
-        super(SqueezeWave, self).__init__()        
-        assert(n_audio_channel % 2 == 0)
+    def __init__(
+            self, n_mel_channels, n_flows, n_group, n_early_every, n_early_size, WN_config,
+        ):
+        super(SqueezeWave, self).__init__()
+        assert(n_group % 2 == 0)
         self.n_flows = n_flows
-        self.n_audio_channel = n_audio_channel
+        self.n_group = n_group
         self.n_early_every = n_early_every
         self.n_early_size = n_early_size
         self.WN = torch.nn.ModuleList()
         self.convinv = torch.nn.ModuleList()
 
-        n_half = int(n_audio_channel / 2)
+        n_half = n_group // 2
+
         # Set up layers with the right sizes based on how many dimensions
         # have been output already
-        n_remaining_channels = n_audio_channel
+        n_remaining_channels = n_group
         for k in range(n_flows):
             if k % self.n_early_every == 0 and k > 0:
-                n_half = n_half - int(self.n_early_size/2)
+                n_half = n_half - self.n_early_size // 2
                 n_remaining_channels = n_remaining_channels - self.n_early_size
             self.convinv.append(Invertible1x1Conv(n_remaining_channels))
             self.WN.append(WN(n_half, n_mel_channels, **WN_config))
-
         self.n_remaining_channels = n_remaining_channels  # Useful during inference
 
-    def forward(self, forward_input):
+    def forward(self, forward_input: Tuple[torch.Tensor, torch.Tensor]):
         """
         forward_input[0] = mel_spectrogram:  batch x n_mel_channels x frames
         forward_input[1] = audio: batch x time
@@ -214,7 +170,7 @@ class SqueezeWave(torch.nn.Module):
         spect, audio = forward_input
 
         audio = audio.unfold(
-            1, self.n_audio_channel, self.n_audio_channel).permute(0, 2, 1)
+            1, self.n_group, self.n_group).permute(0, 2, 1)
         output_audio = []
         log_s_list = []
         log_det_W_list = []
@@ -244,15 +200,10 @@ class SqueezeWave(torch.nn.Module):
 
     def infer(self, spect, sigma=1.0):
         spect_size = spect.size()
-        l = spect.size(2)*(256 // self.n_audio_channel)
-        if spect.type() == 'torch.cuda.HalfTensor':
-            audio = torch.cuda.HalfTensor(spect.size(0),
-                                          self.n_remaining_channels,
-                                          l).normal_()
-        else:
-            audio = torch.cuda.FloatTensor(spect.size(0),
-                                           self.n_remaining_channels,
-                                           l).normal_()
+        l = spect.size(2)*(256 // self.n_group)
+        audio = torch.randn(spect.size(0),
+                            self.n_remaining_channels,
+                            l).type_as(spect)
 
         for k in reversed(range(self.n_flows)):
             n_half = int(audio.size(1)/2)
@@ -268,25 +219,12 @@ class SqueezeWave(torch.nn.Module):
             audio = self.convinv[k](audio, reverse=True)
 
             if k % self.n_early_every == 0 and k > 0:
-                if spect.type() == 'torch.cuda.HalfTensor':
-                    z = torch.cuda.HalfTensor(spect.size(0), self.n_early_size, l).normal_()
-                else:
-                    z = torch.cuda.FloatTensor(spect.size(0), self.n_early_size, l).normal_()
+                z = torch.randn(spect.size(0), self.n_early_size, l).type_as(spect)
                 audio = torch.cat((sigma*z, audio),1)
 
         audio = audio.permute(0,2,1).contiguous().view(audio.size(0), -1).data
         return audio
 
-
-    @staticmethod
-    def remove_weightnorm(model):
-        squeezewave = model
-        for WN in squeezewave.WN:
-            WN.start = torch.nn.utils.remove_weight_norm(WN.start)
-            WN.in_layers = remove_batch_norm(WN.in_layers)
-            WN.cond_layer = torch.nn.utils.remove_weight_norm(WN.cond_layer)
-            WN.res_skip_layers = remove(WN.res_skip_layers) 
-        return squeezewave
 
 def fuse_conv_and_bn(conv, bn):
     fusedconv = torch.nn.Conv1d(
@@ -311,6 +249,17 @@ def fuse_conv_and_bn(conv, bn):
     fusedconv.bias.data = ( b_conv + b )
     return fusedconv
 
+
+def remove_weightnorm(model):
+    squeezewave = model
+    for WN in squeezewave.WN:
+        WN.start = torch.nn.utils.remove_weight_norm(WN.start)
+        WN.in_layers = remove_batch_norm(WN.in_layers)
+        WN.cond_layer = torch.nn.utils.remove_weight_norm(WN.cond_layer)
+        WN.res_skip_layers = remove(WN.res_skip_layers) 
+    return squeezewave
+
+
 def remove_batch_norm(conv_list):
     new_conv_list = torch.nn.ModuleList()
     for old_conv in conv_list:
@@ -319,10 +268,10 @@ def remove_batch_norm(conv_list):
         new_conv_list.append(torch.nn.Sequential(depthwise, pointwise))
     return new_conv_list
 
+
 def remove(conv_list):
     new_conv_list = torch.nn.ModuleList()
     for old_conv in conv_list:
         old_conv = torch.nn.utils.remove_weight_norm(old_conv)
         new_conv_list.append(old_conv)
     return new_conv_list
-
